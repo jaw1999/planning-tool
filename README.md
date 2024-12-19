@@ -296,17 +296,4 @@ The application uses Prisma with PostgreSQL. Key models include:
 - Maintenance Records
 - Exercise Plans
 
-## Support
-For support, please create an issue in the GitHub repository or contact the development team.
-
-## Acknowledgments
-Built with:
-- Next.js 14
-- TypeScript
-- Prisma
-- PostgreSQL
-- AWS S3
-- Tailwind CSS
-- Radix UI
-- Recharts
 
