@@ -1,0 +1,277 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// User management
+model User {
+  id        String    @id @default(cuid())
+  name      String
+  email     String    @unique
+  password  String     // Changed from optional to required
+  role      Role      @default(VIEWER)
+  status    UserStatus @default(ACTIVE)
+  createdAt DateTime  @default(now())
+  lastLogin DateTime?
+  updatedAt DateTime  @updatedAt
+}
+
+model Permission {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  roles       Json     // Stores the roles object
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Core system information
+model System {
+  id                String           @id @default(cuid())
+  name              String           @unique
+  description       String?
+  basePrice         Float
+  hasLicensing      Boolean         @default(false)
+  licensePrice      Float?
+  leadTime          Int              // in days
+  specifications    Json?            // Technical specifications
+  consumablesRate   Float?           // Monthly consumption rate
+  systemDocuments   SystemDocument[]
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  exercises         ExerciseSystem[]
+}
+
+model Exercise {
+  id              String           @id @default(cuid())
+  name            String
+  description     String?
+  startDate       DateTime
+  endDate         DateTime
+  location        String?
+  status          ExerciseStatus   @default(PLANNING)
+  totalBudget     Float?
+  requirements    Json?            // Exercise specific requirements
+  systems         ExerciseSystem[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model ExerciseSystem {
+  id                String                      @id @default(cuid())
+  exerciseId        String
+  systemId          String
+  quantity          Int
+  fsrSupport        FSRType                     @default(NONE)
+  fsrCost           Float?
+  consumablePresets ExerciseConsumablePreset[]  // relation field
+  exercise          Exercise       @relation(fields: [exerciseId], references: [id])
+  system            System         @relation(fields: [systemId], references: [id])
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
+
+  @@unique([exerciseId, systemId])
+}
+
+// Track all costs for better analysis
+model CostRecord {
+  id              String     @id @default(cuid())
+  exerciseId      String?
+  systemId        String?
+  type            CostType
+  amount          Float
+  date            DateTime
+  description     String?
+  category        String?    // Additional categorization if needed
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+}
+
+enum Role {
+  ADMIN
+  PLANNER
+  VIEWER
+  GUEST
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum ExerciseStatus {
+  PLANNING
+  APPROVED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum FSRType {
+  NONE
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+}
+
+enum CostType {
+  ONE_TIME
+  LICENSE
+  FSR
+  CONSUMABLE
+  SHIPPING
+  REFURBISHMENT
+  SPARES
+  TRAINING
+  MAINTENANCE
+  RECURRING
+}
+
+model Organization {
+  id          String      @id @default(cuid())
+  name        String
+  type        String
+  location    String?
+  equipment   equipment[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+enum EquipmentStatus {
+  AVAILABLE
+  IN_USE
+  MAINTENANCE
+  RETIRED
+}
+
+enum FSRFrequency {
+  DAILY
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  QUARTERLY
+  SEMIANNUAL
+  ANNUAL
+  AS_NEEDED
+}
+
+model equipment {
+  id                        String        @id @default(cuid())
+  productInfo              Json          // Stores name, model, version, etc.
+  physicalSpecifications   Json          // Stores dimensions, weight, materials
+  systemComponents         Json          // Renamed from systems to match TS interface
+  interfaces               Json          // Stores mechanical, electrical, data interfaces
+  powerSpecifications      Json          // Stores power requirements and management
+  environmentalSpecifications Json       // Stores temperature, altitude, weather specs
+  software                 Json?         // Optional software configurations
+  operations               Json          // Stores deployment, training, maintenance info
+  logistics                Json          // Stores procurement, shipping, spares info
+  integration              Json          // Stores platform and payload compatibility
+  status                   EquipmentStatus @default(AVAILABLE)  // Added status field
+  fsrFrequency            FSRFrequency    @default(AS_NEEDED)  // Added FSR frequency
+  acquisitionCost         Float?          // Added optional cost fields
+  fsrSupportCost         Float?
+  location               String?
+  serialNumber           String?
+  assetTag              String?
+  notes                 String?
+  organization          Organization?    @relation(fields: [organizationId], references: [id])
+  organizationId        String?
+  documents             EquipmentDocument[]
+  systemARelations      EquipmentRelation[] @relation("SystemA")
+  systemBRelations      EquipmentRelation[] @relation("SystemB")
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+}
+
+model EquipmentDocument {
+  id          String    @id @default(cuid())
+  title       String
+  type        String
+  url         String
+  equipment   equipment @relation(fields: [equipmentId], references: [id])
+  equipmentId String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model EquipmentRelation {
+  id          String    @id @default(cuid())
+  type        String
+  systemA     equipment @relation("SystemA", fields: [systemAId], references: [id])
+  systemAId   String
+  systemB     equipment @relation("SystemB", fields: [systemBId], references: [id])
+  systemBId   String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([systemAId, systemBId])
+}
+
+model SystemDocument {
+  id          String    @id @default(cuid())
+  title       String
+  type        String
+  url         String
+  system      System    @relation(fields: [systemId], references: [id])
+  systemId    String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Cost {
+  id          String    @id @default(cuid())
+  type        CostType
+  amount      Float
+  date        DateTime
+  description String?
+  category    String?
+  exerciseId  String?
+  systemId    String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  // ... rest of the model
+}
+
+model Consumable {
+  id                  String    @id @default(cuid())
+  name                String
+  description         String?
+  unit                String    
+  currentUnitCost     Float
+  category            String?   
+  notes               String?
+  presets            ConsumablePreset[]
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+}
+
+model ConsumablePreset {
+  id              String    @id @default(cuid())
+  name            String    
+  description     String?
+  consumableId    String
+  consumable      Consumable @relation(fields: [consumableId], references: [id])
+  quantity        Float     
+  notes           String?
+  exerciseUses    ExerciseConsumablePreset[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model ExerciseConsumablePreset {
+  id              String         @id @default(cuid())
+  exerciseSystemId String
+  presetId        String
+  quantity        Int           
+  exerciseSystem  ExerciseSystem @relation(fields: [exerciseSystemId], references: [id])
+  preset          ConsumablePreset @relation(fields: [presetId], references: [id])
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@unique([exerciseSystemId, presetId])
+}
