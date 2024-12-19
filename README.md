@@ -51,7 +51,6 @@ A comprehensive web application for military equipment management, exercise plan
 - Consumption rate analysis
 - Budget forecasting
 - Integration with equipment specifications
-- Automated reordering system
 - Usage history tracking
 
 ### Logistics Management
