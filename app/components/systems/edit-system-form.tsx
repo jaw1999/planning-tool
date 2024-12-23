@@ -18,7 +18,37 @@ export function EditSystemForm({ system, onSave, onCancel }: EditSystemFormProps
     licensePrice: system.licensePrice,
     leadTime: system.leadTime,
     consumablesRate: system.consumablesRate,
-    specifications: system.specifications
+    specifications: {
+      dimensions: {
+        length: system.specifications?.dimensions?.length || 0,
+        width: system.specifications?.dimensions?.width || 0,
+        height: system.specifications?.dimensions?.height || 0,
+        unit: system.specifications?.dimensions?.unit || 'mm'
+      },
+      weight: {
+        base: system.specifications?.weight?.base || 0,
+        loaded: system.specifications?.weight?.loaded || 0,
+        unit: system.specifications?.weight?.unit || 'kg'
+      },
+      power: {
+        voltage: system.specifications?.power?.voltage || 0,
+        amperage: system.specifications?.power?.amperage || 0,
+        frequency: system.specifications?.power?.frequency || 0
+      },
+      environmental: {
+        temperature: {
+          min: system.specifications?.environmental?.temperature?.min || 0,
+          max: system.specifications?.environmental?.temperature?.max || 0,
+          unit: system.specifications?.environmental?.temperature?.unit || 'C'
+        },
+        humidity: {
+          min: system.specifications?.environmental?.humidity?.min || 0,
+          max: system.specifications?.environmental?.humidity?.max || 0,
+          unit: system.specifications?.environmental?.humidity?.unit || '%'
+        }
+      },
+      customFields: system.specifications?.customFields || {}
+    }
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -72,8 +102,38 @@ export function EditSystemForm({ system, onSave, onCancel }: EditSystemFormProps
     setFormData(prev => ({
       ...prev,
       specifications: {
-        ...prev.specifications,
-        [key]: value
+        dimensions: {
+          length: prev.specifications?.dimensions?.length || 0,
+          width: prev.specifications?.dimensions?.width || 0,
+          height: prev.specifications?.dimensions?.height || 0,
+          unit: prev.specifications?.dimensions?.unit || 'mm'
+        },
+        weight: {
+          base: prev.specifications?.weight?.base || 0,
+          loaded: prev.specifications?.weight?.loaded || 0,
+          unit: prev.specifications?.weight?.unit || 'kg'
+        },
+        power: {
+          voltage: prev.specifications?.power?.voltage || 0,
+          amperage: prev.specifications?.power?.amperage || 0,
+          frequency: prev.specifications?.power?.frequency || 0
+        },
+        environmental: {
+          temperature: {
+            min: prev.specifications?.environmental?.temperature?.min || 0,
+            max: prev.specifications?.environmental?.temperature?.max || 0,
+            unit: prev.specifications?.environmental?.temperature?.unit || 'C'
+          },
+          humidity: {
+            min: prev.specifications?.environmental?.humidity?.min || 0,
+            max: prev.specifications?.environmental?.humidity?.max || 0,
+            unit: prev.specifications?.environmental?.humidity?.unit || '%'
+          }
+        },
+        customFields: {
+          ...(prev.specifications?.customFields || {}),
+          [key]: value
+        }
       }
     }));
   };
@@ -82,20 +142,65 @@ export function EditSystemForm({ system, onSave, onCancel }: EditSystemFormProps
     setFormData(prev => ({
       ...prev,
       specifications: {
-        ...prev.specifications,
-        ['New Field']: ''
+        dimensions: prev.specifications?.dimensions || {
+          length: 0,
+          width: 0,
+          height: 0,
+          unit: 'mm'
+        },
+        weight: prev.specifications?.weight || {
+          base: 0,
+          loaded: 0,
+          unit: 'kg'
+        },
+        power: prev.specifications?.power || {
+          voltage: 0,
+          amperage: 0,
+          frequency: 0
+        },
+        environmental: {
+          temperature: { min: 0, max: 50, unit: 'C' },
+          humidity: { min: 0, max: 95, unit: '%' },
+        },
+        customFields: {
+          ...(prev.specifications?.customFields || {}),
+          'New Field': ''
+        }
       }
     }));
   };
 
   const removeSpecification = (key: string) => {
-    if (!formData.specifications) return;
-    
-    const { [key]: _, ...rest } = formData.specifications;
-    setFormData(prev => ({
-      ...prev,
-      specifications: rest
-    }));
+    setFormData(prev => {
+      if (!prev.specifications?.customFields) return prev;
+      const { [key]: _, ...rest } = prev.specifications.customFields;
+      return {
+        ...prev,
+        specifications: {
+          dimensions: prev.specifications?.dimensions || {
+            length: 0,
+            width: 0,
+            height: 0,
+            unit: 'mm'
+          },
+          weight: prev.specifications?.weight || {
+            base: 0,
+            loaded: 0,
+            unit: 'kg'
+          },
+          power: prev.specifications?.power || {
+            voltage: 0,
+            amperage: 0,
+            frequency: 0
+          },
+          environmental: {
+            temperature: { min: 0, max: 50, unit: 'C' },
+            humidity: { min: 0, max: 95, unit: '%' },
+          },
+          customFields: rest
+        }
+      };
+    });
   };
 
   return (
@@ -211,19 +316,22 @@ export function EditSystemForm({ system, onSave, onCancel }: EditSystemFormProps
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {formData.specifications && Object.entries(formData.specifications).map(([key, value]) => (
+            {formData.specifications?.customFields && Object.entries(formData.specifications.customFields).map(([key, value]) => (
               <div key={key} className="flex gap-4">
                 <input
                   type="text"
                   value={key}
                   onChange={e => {
-                    if (formData.specifications) {
-                      const { [key]: value, ...rest } = formData.specifications;
+                    if (formData.specifications?.customFields) {
+                      const { [key]: value, ...rest } = formData.specifications.customFields;
                       setFormData(prev => ({
                         ...prev,
                         specifications: {
-                          ...rest,
-                          [e.target.value]: value
+                          ...prev.specifications!,
+                          customFields: {
+                            ...rest,
+                            [e.target.value]: value
+                          }
                         }
                       }));
                     }
@@ -233,7 +341,7 @@ export function EditSystemForm({ system, onSave, onCancel }: EditSystemFormProps
                 />
                 <input
                   type="text"
-                  value={value as string}
+                  value={value}
                   onChange={e => handleSpecificationChange(key, e.target.value)}
                   className="flex-1 p-2 border rounded"
                   placeholder="Value"

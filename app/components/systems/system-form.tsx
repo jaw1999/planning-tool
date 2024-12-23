@@ -23,8 +23,6 @@ export function SystemForm({ system, onSubmit }: SystemFormProps) {
         standard: parseFloat(formData.get('maintenanceStandard') as string),
         premium: parseFloat(formData.get('maintenancePremium') as string),
       },
-      trainingDaysRequired: parseInt(formData.get('trainingDays') as string),
-      trainingCostPerDay: parseFloat(formData.get('trainingCost') as string),
       consumablesRate: parseFloat(formData.get('consumablesRate') as string),
       technicalSupportCost: parseFloat(formData.get('technicalSupportCost') as string),
       sparePartsPackageCost: parseFloat(formData.get('sparePartsPackageCost') as string),

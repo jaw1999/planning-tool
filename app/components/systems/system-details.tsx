@@ -162,16 +162,6 @@ export function SystemDetails({ system, onEdit }: SystemDetailsProps) {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="p-4 border rounded-lg">
-              <h4 className="font-medium">Training</h4>
-              <div className="mt-2 space-y-1">
-                <div className="text-sm">Days Required: {system.trainingDaysRequired || 0}</div>
-                <div className="text-sm">Cost per Day: ${(system.trainingCostPerDay || 0).toLocaleString()}</div>
-                <div className="text-sm font-medium mt-2">
-                  Total: ${((system.trainingDaysRequired || 0) * (system.trainingCostPerDay || 0)).toLocaleString()}
-                </div>
-              </div>
-            </div>
-            <div className="p-4 border rounded-lg">
               <h4 className="font-medium">Support Packages</h4>
               <div className="mt-2 space-y-2">
                 <div>

@@ -44,10 +44,7 @@ export default function SystemsPage() {
         },
         environmental: {
           temperature: { min: 0, max: 50, unit: 'C' },
-          humidity: { min: 0, max: 95, unit: '%' },
-          ipRating: equipment.environmentalSpecifications?.certifications?.environmental?.find(
-            cert => cert.toLowerCase().startsWith('ip')
-          ) || undefined
+          humidity: { min: 0, max: 95, unit: '%' }
         }
       }
     };

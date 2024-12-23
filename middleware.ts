@@ -10,7 +10,8 @@ const publicRoutes = [
   '/api/equipment',
   '/favicon.ico',
   '/api/users',
-  '/api/costs'
+  '/api/costs',
+  '/api/import'
 ];
 
 export function middleware(request: NextRequest) {

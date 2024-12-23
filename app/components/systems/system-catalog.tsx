@@ -18,31 +18,17 @@ export function SystemCatalog({ systems, onSystemSelect }: SystemCatalogProps) {
         >
           <CardHeader>
             <CardTitle>{system.name}</CardTitle>
+            <p className="text-sm text-muted-foreground">{system.description}</p>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <p className="text-gray-600">{system.description}</p>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div>
-                  <span className="font-medium">Base Price:</span>
-                  <span className="ml-2">${system.basePrice.toLocaleString()}</span>
-                </div>
-                <div>
-                  <span className="font-medium">Lead Time:</span>
-                  <span className="ml-2">{system.leadTime} days</span>
-                </div>
-                {system.hasLicensing && (
-                  <div>
-                    <span className="font-medium">License:</span>
-                    <span className="ml-2">${system.licensePrice?.toLocaleString()}/mo</span>
-                  </div>
-                )}
-                {system.consumablesRate && (
-                  <div>
-                    <span className="font-medium">Consumables:</span>
-                    <span className="ml-2">${system.consumablesRate.toLocaleString()}/mo</span>
-                  </div>
-                )}
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Base Price</span>
+                <span className="font-medium">${system.basePrice?.toLocaleString() || '0'}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Lead Time</span>
+                <span className="font-medium">{system.leadTime || 0} days</span>
               </div>
             </div>
           </CardContent>

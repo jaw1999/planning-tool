@@ -5,20 +5,34 @@ export interface SystemBreakdown {
 }
 
 export interface MonthlyBreakdown {
-  month: string;
-  amount: number;
-  change: number;
+  month: Date;
+  totalCost: number;
+  exerciseCount: number;
+  systemCount: number;
 }
 
 export interface CostBreakdown {
+  system: string;
   name: string;
+  hardware: number;
+  fsr: number;
+  consumables: number;
+  total: number;
   value: number;
-  percentageOfTotal: number;
+  count: number;
   monthlyAverage: number;
+  percentageOfTotal: number;
   trend: 'increasing' | 'decreasing' | 'stable';
   breakdown: {
-    bySystem: SystemBreakdown[];
-    byMonth: MonthlyBreakdown[];
+    byMonth: Array<{
+      month: string;
+      amount: number;
+    }>;
+    bySystem: Array<{
+      systemName: string;
+      amount: number;
+      percentage: number;
+    }>;
   };
 }
 
@@ -26,6 +40,7 @@ export interface SystemUsage {
   name: string;
   exercises: number;
   totalCost: number;
+  totalDuration: number;
 }
 
 export interface MonthlyCost {
@@ -43,14 +58,14 @@ export interface MonthlyCost {
 
 export interface AnalyticsData {
   totalSpending: number;
+  yearlyChange: number;
+  monthlyAverage: number;
+  monthlyChange: number;
   activeExercises: number;
   pendingApproval: number;
   systemsInUse: number;
   utilization: number;
-  monthlyAverage: number;
-  monthlyChange: number;
-  yearlyChange: number;
   monthlyCosts: MonthlyCost[];
-  systemUsage: SystemUsage[];
   costBreakdown: CostBreakdown[];
+  systemUsage: SystemUsage[];
 } 

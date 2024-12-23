@@ -8,7 +8,7 @@ import { Consumable } from '@/app/lib/types/system';
 
 interface ConsumableLegendDialogProps {
   consumables: Consumable[];
-  onAdd: () => void;
+  onAdd: (consumable: Consumable) => Promise<void>;
   onUpdate: (id: string, updates: Partial<Consumable>) => void;
   onDelete: (id: string) => void;
 }

@@ -7,10 +7,8 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const format = searchParams.get('format') as 'csv' | 'json';
 
-    // Fetch all systems (without documents since they're not needed for export)
     const systems = await prisma.system.findMany();
 
-    // Convert to requested format
     let data: string;
     let contentType: string;
     let filename: string;

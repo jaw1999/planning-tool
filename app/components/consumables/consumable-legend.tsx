@@ -13,12 +13,13 @@ import { useState } from 'react';
 
 interface ConsumableLegendProps {
   consumables: Consumable[];
-  onAdd: () => void;
+  onAdd: (consumable: Consumable) => void;
   onUpdate: (id: string, updates: Partial<Consumable>) => void;
   onDelete: (id: string) => void;
 }
 
 export function ConsumableLegend({ consumables, onAdd, onUpdate, onDelete }: ConsumableLegendProps) {
+  const [open, setOpen] = useState(false);
   const [newItem, setNewItem] = useState<Partial<Consumable>>({
     name: '',
     unit: '',
@@ -28,9 +29,23 @@ export function ConsumableLegend({ consumables, onAdd, onUpdate, onDelete }: Con
     notes: ''
   });
 
-  const handleAddItem = () => {
-    onAdd();
-    // Reset form
+  const handleAddClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    if (!newItem.name || !newItem.unit) return;
+    
+    const consumable: Consumable = {
+      id: crypto.randomUUID(),
+      name: newItem.name,
+      unit: newItem.unit,
+      currentUnitCost: newItem.currentUnitCost || 0,
+      category: newItem.category || 'Uncategorized',
+      description: newItem.description,
+      notes: newItem.notes,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    await onAdd(consumable);
     setNewItem({
       name: '',
       unit: '',
@@ -39,6 +54,23 @@ export function ConsumableLegend({ consumables, onAdd, onUpdate, onDelete }: Con
       description: '',
       notes: ''
     });
+    setOpen(false);
+  };
+
+  const handleEmptyStateAdd = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    const consumable: Consumable = {
+      id: crypto.randomUUID(),
+      name: 'New Item',
+      unit: 'units',
+      currentUnitCost: 0,
+      category: 'Uncategorized',
+      description: '',
+      notes: '',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    onAdd(consumable);
   };
 
   // Group consumables by category
@@ -60,7 +92,7 @@ export function ConsumableLegend({ consumables, onAdd, onUpdate, onDelete }: Con
             Standard consumables catalog for use across systems and equipment
           </p>
         </div>
-        <Dialog>
+        <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button variant="outline" className="gap-2">
               <Plus className="h-4 w-4" /> Add Reference Item
@@ -124,7 +156,7 @@ export function ConsumableLegend({ consumables, onAdd, onUpdate, onDelete }: Con
                   placeholder="Additional notes"
                 />
               </div>
-              <Button onClick={handleAddItem} className="w-full">
+              <Button onClick={handleAddClick} className="w-full">
                 Add Item
               </Button>
             </div>
@@ -180,7 +212,7 @@ export function ConsumableLegend({ consumables, onAdd, onUpdate, onDelete }: Con
               <h3 className="font-semibold">No reference items</h3>
               <p className="text-sm text-muted-foreground">Add items to build your consumables catalog.</p>
             </div>
-            <Button onClick={onAdd} variant="secondary" className="mt-4">
+            <Button onClick={handleEmptyStateAdd} variant="secondary" className="mt-4">
               <Package className="h-4 w-4 mr-2" /> Add First Item
             </Button>
           </div>

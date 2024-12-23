@@ -4,6 +4,7 @@
 export type FSRType = 'NONE' | 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY';
 export type ExerciseStatus = 'PLANNING' | 'APPROVED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
 export type CostType = 'ONE_TIME' | 'RECURRING' | 'CONSUMABLE' | 'LICENSE' | 'FSR' | 'OTHER';
+export type SystemStatus = 'AVAILABLE' | 'MAINTENANCE' | 'DEPLOYED' | 'RETIRED';
 
 // Base Interfaces
 export interface SystemSpecifications {
@@ -34,7 +35,45 @@ export interface SystemSpecifications {
       max: number;
       unit: string;
     };
-    ipRating?: string;
+  };
+  customFields: Record<string, string>;
+}
+
+export interface SystemOperations {
+  deployment: {
+    methods: string[];
+    requirements: string[];
+    limitations: string[];
+  };
+  training: {
+    required: {
+      days: number;
+      costPerDay: number;
+      prerequisites: string[];
+    };
+    certification: string[];
+  };
+  maintenance: {
+    scheduled: string[];
+    requirements: string[];
+  };
+  support: {
+    onsite: {
+      available: boolean;
+      staffing: string;
+      specializations: string[];
+      certifications: string[];
+      tools: string[];
+    };
+    remote: {
+      available: boolean;
+      methods: string[];
+      response?: {
+        time: number;
+        unit: string;
+      };
+      annualCost: number;
+    };
   };
 }
 
@@ -43,20 +82,14 @@ export interface System {
   name: string;
   description?: string;
   basePrice: number;
-  
-  // Licensing
   hasLicensing: boolean;
-  licensePrice: number;
-  
-  // Timing & Rates
+  licensePrice?: number;
   leadTime: number;
   consumablesRate: number;
-  
-  // Training
-  trainingDaysRequired?: number;
-  trainingCostPerDay?: number;
-  
-  // Maintenance & Support
+  status: SystemStatus;
+  location?: string;
+  serialNumber?: string;
+  assetTag?: string;
   maintenanceLevels: {
     basic: number;
     standard: number;
@@ -64,106 +97,45 @@ export interface System {
   };
   technicalSupportCost: number;
   sparePartsPackageCost: number;
-  
-  // FSR Support
   fsrSupport: {
     available: boolean;
     monthlyCost: number;
     weeklyMultiplier: number;
     biweeklyMultiplier: number;
   };
-
-  // Technical Specifications
-  specifications: SystemSpecifications;
-  consumablePresets?: ConsumablePreset[];
-
-  // Operational Details
-  operations: {
-    deployment: {
-      methods: string[];
-      requirements: string[];
-      limitations: string[];
+  specifications: {
+    dimensions: {
+      length: number;
+      width: number;
+      height: number;
+      unit: string;
     };
-    training: {
-      required: {
-        days: number;
-        costPerDay: number;
-        prerequisites: string[];
+    weight: {
+      base: number;
+      loaded: number;
+      unit: string;
+    };
+    power: {
+      voltage: number;
+      amperage: number;
+      frequency: number;
+    };
+    environmental: {
+      temperature: {
+        min: number;
+        max: number;
+        unit: string;
       };
-      certification: string[];
-    };
-    maintenance: {
-      scheduled: {
-        interval: string;
-        tasks: string[];
-        cost: number;
-      }[];
-      requirements: string[];
-    };
-    support: {
-      onsite: {
-        available: boolean;
-        staffing: string;
-        specializations: string[];
-        certifications: string[];
-        tools: string[];
-      };
-      remote: {
-        available: boolean;
-        methods: string[];
-        annualCost: number;
+      humidity: {
+        min: number;
+        max: number;
+        unit: string;
       };
     };
+    customFields?: Record<string, string>;
   };
-
-  // Logistics
-  logistics: {
-    procurement: {
-      leadTime: {
-        standard: number;
-        expedited: number;
-      };
-      pricing: {
-        acquisition: number;
-        fsrSupport?: number;
-      };
-    };
-    spares: {
-      critical: string[];
-      recommended: string[];
-      availability: {
-        monthlyRate: number;
-        packageCost: number;
-      };
-    };
-  };
-
-  // Software & Licensing
-  software?: {
-    type: string;
-    version: string;
-    licensing: {
-      type: string;
-      terms: {
-        monthlyFee?: number;
-        annualFee?: number;
-        seats?: number;
-      };
-      restrictions: string[];
-    };
-    features: string[];
-    interfaces: string[];
-  };
-
-  // Tracking
-  location: string;
-  serialNumber: string;
-  assetTag: string;
-  status: 'AVAILABLE' | 'LIMITED' | 'UNAVAILABLE';
-  
-  // Metadata
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface Exercise {
@@ -175,10 +147,10 @@ export interface Exercise {
   location?: string;
   status: ExerciseStatus;
   totalBudget?: number;
-  requirements?: Record<string, any>;
+  launchesPerDay?: number;
+  systems?: ExerciseSystem[];
   createdAt: Date;
   updatedAt: Date;
-  systems?: (ExerciseSystem & { system: System })[];
 }
 
 export interface ExerciseSystem {
@@ -187,7 +159,8 @@ export interface ExerciseSystem {
   systemId: string;
   quantity: number;
   fsrSupport: FSRType;
-  fsrCost: number | null;
+  fsrCost: number;
+  launchesPerDay?: number;
   consumablePresets: ExerciseConsumablePreset[];
   createdAt: Date;
   updatedAt: Date;
@@ -260,6 +233,7 @@ export interface ExerciseSystemFormData {
   quantity: number;
   fsrSupport: FSRType;
   fsrCost?: number;
+  launchesPerDay?: number;
   consumablePresets?: {
     presetId: string;
     quantity: number;
@@ -274,6 +248,7 @@ export interface ExerciseFormData {
   location?: string;
   status: ExerciseStatus;
   totalBudget?: number;
+  launchesPerDay?: number;
   systems: ExerciseSystemFormData[];
 }
 
@@ -333,6 +308,7 @@ export interface CalculatedResults {
     systemName: string;
     baseHardwareCost: number;
     fsrCost: number;
+    consumablesCost: number;
     totalMonthlyRecurring: number;
     totalForDuration: number;
     duration: number;

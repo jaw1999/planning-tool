@@ -15,7 +15,7 @@ export function NotificationsContainer() {
   return (
     <div
       aria-live="assertive"
-      className="fixed top-0 right-0 flex flex-col items-end px-4 py-6 pointer-events-none sm:p-6 z-50 space-y-4"
+      className="fixed top-0 right-0 flex flex-col items-end px-4 py-6 pointer-events-none sm:p-6 z-50 space-y-4 min-w-[400px] max-w-[800px]"
     >
       {toastNotifications.map((notification) => (
         <NotificationToast

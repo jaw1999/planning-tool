@@ -19,12 +19,13 @@ export function useSystems(): UseSystemsReturn {
   const fetchSystems = async () => {
     try {
       const response = await fetch('/api/systems');
-      const data = await response.json();
+      const text = await response.text();
       
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch systems');
+        throw new Error(text || response.statusText);
       }
       
+      const data = JSON.parse(text);
       setSystems(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -47,15 +48,18 @@ export function useSystems(): UseSystemsReturn {
         body: JSON.stringify(data),
       });
       
+      const text = await response.text();
+      
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create system');
+        throw new Error(text || 'Failed to create system');
       }
       
-      await fetchSystems();
+      const newSystem = JSON.parse(text);
+      setSystems(prev => [...prev, newSystem]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-      throw err;
+      const message = err instanceof Error ? err.message : 'Failed to create system';
+      setError(message);
+      throw new Error(message);
     }
   };
 
@@ -69,14 +73,17 @@ export function useSystems(): UseSystemsReturn {
         body: JSON.stringify(data),
       });
       
+      const text = await response.text();
+      
       if (!response.ok) {
-        throw new Error('Failed to update system');
+        throw new Error(text || 'Failed to update system');
       }
       
       await fetchSystems();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-      throw err;
+      const message = err instanceof Error ? err.message : 'Failed to update system';
+      setError(message);
+      throw new Error(message);
     }
   };
 
@@ -86,15 +93,17 @@ export function useSystems(): UseSystemsReturn {
         method: 'DELETE',
       });
       
+      const text = await response.text();
+      
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete system');
+        throw new Error(text || 'Failed to delete system');
       }
       
       setSystems(systems.filter(system => system.id !== id));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-      throw err;
+      const message = err instanceof Error ? err.message : 'Failed to delete system';
+      setError(message);
+      throw new Error(message);
     }
   };
 

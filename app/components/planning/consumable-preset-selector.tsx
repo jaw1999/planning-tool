@@ -1,5 +1,7 @@
 import React from 'react';
-import { ConsumablePreset } from '@/app/lib/types/system';
+import { ConsumablePreset, Consumable } from '@/app/lib/types/system';
+import { ConsumableLegendDialog } from '@/app/components/consumables/consumable-legend-dialog';
+import { useNotificationHelpers } from '@/app/lib/contexts/notifications-context';
 
 interface ConsumablePresetSelectorProps {
   systemId: string;
@@ -8,10 +10,7 @@ interface ConsumablePresetSelectorProps {
     presetId: string;
     quantity: number;
   }>;
-  onPresetsChange: (
-    systemId: string,
-    presets: Array<{ presetId: string; quantity: number }>
-  ) => void;
+  onPresetsChange: (systemId: string, presets: Array<{ presetId: string; quantity: number; }>) => void;
 }
 
 export function ConsumablePresetSelector({
@@ -20,6 +19,8 @@ export function ConsumablePresetSelector({
   selectedPresets,
   onPresetsChange
 }: ConsumablePresetSelectorProps) {
+  const { notifyError } = useNotificationHelpers();
+
   const handlePresetSelect = (presetId: string) => {
     if (selectedPresets.some(p => p.presetId === presetId)) return;
     
@@ -47,9 +48,69 @@ export function ConsumablePresetSelector({
     );
   };
 
+  const handleAddConsumable = async (newConsumable: Consumable): Promise<void> => {
+    try {
+      const response = await fetch('/api/consumables', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newConsumable),
+      });
+      
+      if (!response.ok) throw new Error('Failed to add consumable');
+      
+      return Promise.resolve();
+    } catch (error) {
+      notifyError('Error', 'Failed to add consumable');
+      return Promise.reject(error);
+    }
+  };
+
+  const handleUpdateConsumable = async (id: string, updates: Partial<Consumable>): Promise<void> => {
+    try {
+      const response = await fetch(`/api/consumables/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+      });
+
+      if (!response.ok) throw new Error('Failed to update consumable');
+      
+      return Promise.resolve();
+    } catch (error) {
+      notifyError('Error', 'Failed to update consumable');
+      return Promise.reject(error);
+    }
+  };
+
+  const handleDeleteConsumable = async (id: string): Promise<void> => {
+    try {
+      const response = await fetch(`/api/consumables/${id}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) throw new Error('Failed to delete consumable');
+      
+      return Promise.resolve();
+    } catch (error) {
+      notifyError('Error', 'Failed to delete consumable');
+      return Promise.reject(error);
+    }
+  };
+
   return (
     <div className="mt-4">
-      <h4 className="text-sm font-medium mb-2">Consumable Presets</h4>
+      <div className="flex justify-between items-center mb-2">
+        <h4 className="text-sm font-medium">Consumable Presets</h4>
+        <ConsumableLegendDialog
+          consumables={availablePresets.map(p => p.consumable)}
+          onAdd={handleAddConsumable}
+          onUpdate={handleUpdateConsumable}
+          onDelete={handleDeleteConsumable}
+        />
+      </div>
+      
       <div className="space-y-2">
         {selectedPresets.map(({ presetId, quantity }) => {
           const preset = availablePresets.find(p => p.id === presetId);
@@ -60,7 +121,7 @@ export function ConsumablePresetSelector({
               <div className="flex-1">
                 <div className="font-medium">{preset.name}</div>
                 <div className="text-sm text-gray-500">
-                  {preset.consumable.name} - ${preset.consumable.currentUnitCost}/unit
+                  {preset.consumable.name} ({preset.consumable.unit}) - ${preset.consumable.currentUnitCost}/unit
                 </div>
               </div>
               <input
@@ -92,7 +153,7 @@ export function ConsumablePresetSelector({
             .filter(p => !selectedPresets.some(sp => sp.presetId === p.id))
             .map(preset => (
               <option key={preset.id} value={preset.id}>
-                {preset.name} - {preset.consumable.name}
+                {preset.name} - {preset.consumable.name} ({preset.consumable.unit})
               </option>
             ))}
         </select>

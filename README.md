@@ -1,6 +1,6 @@
-# Military Planning Tool
+# Planning Tool
 
-A comprehensive web application for military equipment management, exercise planning, and logistics tracking. Built with Next.js 14, TypeScript, and modern web technologies.
+A comprehensive web application for equipment management, exercise planning, and logistics tracking. Built with Next.js 14, TypeScript, and modern web technologies.
 
 ## Core Features
 
@@ -81,26 +81,22 @@ A comprehensive web application for military equipment management, exercise plan
 ## Technical Specifications
 
 ### Equipment Data Structure
-- Basic Information
-  - Product details
-  - Classification levels (UNCLASSIFIED to TOP SECRET)
-  - Status tracking
-  - Version control
-  - Configuration management
-  - Use restrictions (disclosure, export, handling)
-  - Part numbering
-  - Model tracking
-
 - Technical Specifications
   - Physical specifications
-  - System components
-  - Interface definitions (mechanical, electrical, data, control)
-  - Power requirements and management
+    - Dimensions (length, width, height)
+    - Weight (base and loaded)
+    - Units of measurement
+  - Power specifications
+    - Voltage requirements
+    - Amperage ratings
+    - Frequency specifications
   - Environmental specifications
-  - Weather limitations
-  - Altitude restrictions
-  - Temperature ranges
-  - Humidity requirements
+    - Temperature ranges (min/max with units)
+    - Humidity ranges (min/max with percentage)
+  - Custom field support
+    - User-defined specifications
+    - Flexible field naming
+    - Value tracking
 
 - RF/EW Capabilities
   - Frequency ranges and bands
@@ -153,6 +149,36 @@ A comprehensive web application for military equipment management, exercise plan
   - Technical documentation
   - Repair procedures
 
+### Exercise Data Structure
+- Mission Planning
+  - Timeline management
+    - Start and end dates
+    - Phase scheduling
+    - Milestone tracking
+  - Resource allocation
+    - Equipment assignments
+    - Personnel requirements
+    - Support services
+  - Environmental conditions
+    - Temperature ranges
+    - Humidity requirements
+    - Weather considerations
+  - Cost tracking
+    - Equipment costs
+    - Personnel costs
+    - Support costs
+    - Consumables
+  - Risk assessment
+    - Environmental factors
+    - Resource availability
+    - Technical limitations
+    - Personnel readiness
+  - After-action reporting
+    - Resource utilization
+    - Performance metrics
+    - Issue tracking
+    - Recommendations
+
 ## Technology Stack
 
 ### Frontend
@@ -192,53 +218,76 @@ A comprehensive web application for military equipment management, exercise plan
 - PostgreSQL 13+
 - npm or yarn
 - AWS Account (for S3 storage)
+- Git
 
-### Installation
+### Initial Setup
 
 1. Clone the repository:
-```bash
 git clone https://github.com/jaw1999/military-planning-tool.git
-```
+cd military-planning-tool
 
 2. Install dependencies:
-```bash
-npm install
-```
+npm install @aws-sdk/client-s3 @hookform/resolvers @prisma/client @radix-ui/react-accordion @radix-ui/react-alert-dialog @radix-ui/react-checkbox @radix-ui/react-dialog @radix-ui/react-dropdown-menu @radix-ui/react-label @radix-ui/react-select @radix-ui/react-separator @radix-ui/react-slider @radix-ui/react-slot @radix-ui/react-switch @radix-ui/react-tabs @radix-ui/react-toast @shadcn/ui @tanstack/react-query axios bcrypt bcryptjs class-variance-authority clsx compromise date-fns debug decimal.js follow-redirects jsonwebtoken lucide-react natural next next-auth papaparse pdf-lib pdf-parse react react-dom react-hook-form recharts string-similarity supports-color tailwind-merge zod
 
 3. Set up environment variables:
-```bash
 cp .env.example .env.local
-```
 
-4. Configure your .env.local with:
-```env
+4. Configure your .env.local with required variables:
+# Database Configuration
 DATABASE_URL="postgresql://username:password@localhost:5432/dbname"
-JWT_SECRET="your-secret-key"
 
-```
+# Authentication
+JWT_SECRET="your-secret-key"
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="your-nextauth-secret"
+
+# Application Settings
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
 
 5. Initialize the database:
-```bash
 npx prisma generate
 npx prisma db push
-```
 
 6. Start the development server:
-```bash
 npm run dev
-```
+
+7. Run database migrations:
+npx prisma migrate dev
+
+8. Seed the database (optional):
+npx prisma db seed
 
 ### Production Deployment
 
 1. Build the application:
-```bash
 npm run build
-```
 
 2. Start the production server:
-```bash
 npm start
-```
+
+### Development Tools Setup
+
+1. Install development dependencies:
+npm install -D @types/bcrypt @types/bcryptjs @types/jsonwebtoken @types/lodash @types/node @types/papaparse @types/react @types/react-dom @types/string-similarity @types/tailwindcss autoprefixer postcss prisma tailwindcss tailwindcss-animate typescript
+
+2. Initialize TypeScript configuration:
+npx tsc --init
+
+3. Set up ESLint:
+npm install -D eslint @typescript-eslint/parser @typescript-eslint/eslint-plugin
+npx eslint --init
+
+4. Configure Prettier:
+npm install -D prettier
+echo {}> .prettierrc
+
+5. Set up Prisma development tools:
+npm install -D prisma
+npx prisma init
+
+6. Install testing framework:
+npm install -D jest @types/jest ts-jest
+npx ts-jest config:init
 
 ## Development Guidelines
 

@@ -7,11 +7,11 @@ const ExerciseSystemSchema = z.object({
   quantity: z.number(),
   fsrSupport: z.enum(['NONE', 'WEEKLY', 'BIWEEKLY', 'MONTHLY']),
   fsrCost: z.number().optional(),
-  consumablesCost: z.number().default(0),
+  launchesPerDay: z.number().optional().default(1),
   consumablePresets: z.array(z.object({
     presetId: z.string(),
     quantity: z.number()
-  })).optional()
+  })).optional().default([])
 });
 
 const ExerciseSchema = z.object({
@@ -21,7 +21,8 @@ const ExerciseSchema = z.object({
   endDate: z.string().or(z.date()),
   location: z.string().optional(),
   status: z.enum(['PLANNING', 'APPROVED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']),
-  systems: z.array(ExerciseSystemSchema)
+  systems: z.array(ExerciseSystemSchema),
+  launchesPerDay: z.number().optional().default(1)
 });
 
 export async function GET() {
@@ -45,6 +46,7 @@ export async function GET() {
       },
       orderBy: { startDate: 'desc' }
     });
+
     return NextResponse.json(exercises);
   } catch (error) {
     console.error('Failed to fetch exercises:', error);
@@ -57,57 +59,112 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const json = await request.json();
-    const validatedData = ExerciseSchema.parse(json);
-    
-    const exercise = await prisma.exercise.create({
-      data: {
-        ...validatedData,
-        systems: {
-          create: validatedData.systems.map(system => ({
-            systemId: system.systemId,
-            quantity: system.quantity,
-            fsrSupport: system.fsrSupport,
-            fsrCost: system.fsrCost || 0,
-            consumablesCost: system.consumablesCost,
-            system: { connect: { id: system.systemId } },
-            consumablePresets: {
-              create: system.consumablePresets?.map(preset => ({
-                presetId: preset.presetId,
-                quantity: preset.quantity,
-                preset: { connect: { id: preset.presetId } }
-              })) || []
+    const data = await request.json();
+    const validatedData = ExerciseSchema.parse(data);
+
+    const exercise = await prisma.$transaction(async (tx) => {
+      // First verify all consumables exist and create presets if needed
+      for (const system of validatedData.systems) {
+        if (system.consumablePresets) {
+          const consumableIds = system.consumablePresets.map(p => p.presetId);
+          const existingConsumables = await tx.consumable.findMany({
+            where: {
+              id: {
+                in: consumableIds
+              }
             }
-          }))
+          });
+
+          if (existingConsumables.length !== consumableIds.length) {
+            throw new Error('One or more consumables not found');
+          }
+
+          // Create ConsumablePresets for each consumable
+          for (const consumable of existingConsumables) {
+            const preset = await tx.consumablePreset.upsert({
+              where: {
+                id: consumable.id
+              },
+              create: {
+                id: consumable.id,
+                consumableId: consumable.id,
+                name: consumable.name,
+                description: consumable.description || '',
+                notes: consumable.notes || '',
+                quantity: 1 // Default quantity for the preset
+              },
+              update: {}
+            });
+          }
         }
-      },
-      include: {
-        systems: {
-          include: {
-            system: true,
-            consumablePresets: {
-              include: {
-                preset: {
-                  include: {
-                    consumable: true
+      }
+
+      // Create exercise and systems
+      const createdExercise = await tx.exercise.create({
+        data: {
+          name: validatedData.name,
+          description: validatedData.description,
+          startDate: new Date(validatedData.startDate),
+          endDate: new Date(validatedData.endDate),
+          location: validatedData.location,
+          status: validatedData.status,
+          launchesPerDay: validatedData.launchesPerDay || 0,
+          systems: {
+            create: validatedData.systems.map(system => ({
+              system: { connect: { id: system.systemId } },
+              quantity: system.quantity,
+              fsrSupport: system.fsrSupport,
+              fsrCost: system.fsrCost || 0,
+              launchesPerDay: system.launchesPerDay || 0
+            }))
+          }
+        },
+        include: {
+          systems: true
+        }
+      });
+
+      // Create consumable presets with verified consumableIds
+      for (const systemData of validatedData.systems) {
+        if (systemData.consumablePresets?.length) {
+          const exerciseSystem = createdExercise.systems.find(
+            s => s.systemId === systemData.systemId
+          );
+          if (exerciseSystem) {
+            await tx.exerciseConsumablePreset.createMany({
+              data: systemData.consumablePresets.map(preset => ({
+                exerciseSystemId: exerciseSystem.id,
+                presetId: preset.presetId,
+                quantity: preset.quantity
+              }))
+            });
+          }
+        }
+      }
+
+      return await tx.exercise.findUnique({
+        where: { id: createdExercise.id },
+        include: {
+          systems: {
+            include: {
+              system: true,
+              consumablePresets: {
+                include: {
+                  preset: {
+                    include: {
+                      consumable: true
+                    }
                   }
                 }
               }
             }
           }
         }
-      }
+      });
     });
-    
-    return NextResponse.json(exercise, { status: 201 });
+
+    return NextResponse.json(exercise);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Invalid data', details: error.errors },
-        { status: 400 }
-      );
-    }
-    
     console.error('Failed to create exercise:', error);
     return NextResponse.json(
       { error: 'Failed to create exercise' },

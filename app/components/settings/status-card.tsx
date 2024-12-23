@@ -1,36 +1,29 @@
 import React from 'react';
-import { Card, CardContent } from '../ui/card';
+import { LucideIcon } from 'lucide-react';
 
 interface StatusCardProps {
-  icon: React.ReactNode;
+  icon: LucideIcon;
   title: string;
   value: string;
-  subValue?: string;
-  color?: 'green' | 'red' | 'blue' | 'default';
+  status: 'connected' | 'disconnected' | 'error' | 'loading' | 'info';
 }
 
-export function StatusCard({ icon, title, value, subValue, color = 'default' }: StatusCardProps) {
-  const colorClasses = {
-    green: 'text-green-600',
-    red: 'text-red-600',
-    blue: 'text-blue-600',
-    default: 'text-gray-900'
+export function StatusCard({ icon: Icon, title, value, status }: StatusCardProps) {
+  const statusColors = {
+    connected: 'text-green-500',
+    disconnected: 'text-red-500',
+    error: 'text-red-500',
+    loading: 'text-blue-500',
+    info: 'text-blue-500'
   };
 
   return (
-    <Card>
-      <CardContent className="pt-6">
-        <div className="flex items-center justify-between">
-          <div className="text-gray-500">{icon}</div>
-          <div className={`text-2xl font-semibold ${colorClasses[color]}`}>
-            {value}
-          </div>
-        </div>
-        <div className="mt-2 text-sm text-gray-600">{title}</div>
-        {subValue && (
-          <div className="mt-1 text-xs text-gray-500">{subValue}</div>
-        )}
-      </CardContent>
-    </Card>
+    <div className="p-4 border rounded-lg bg-card">
+      <div className="flex items-center gap-2 mb-2">
+        <Icon className={`h-4 w-4 ${statusColors[status]}`} />
+        <span className="text-sm text-muted-foreground">{title}</span>
+      </div>
+      <div className="text-2xl font-semibold">{value}</div>
+    </div>
   );
 } 

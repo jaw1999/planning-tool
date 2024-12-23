@@ -30,7 +30,9 @@ interface SystemInput {
     description: string;
     unitCost: number;
     unitsPerMonth: number;
+    type: 'BALLOON_GAS' | 'OTHER';
   }>;
+  launchesPerDay: number;
 }
 
 interface AdditionalCost {
@@ -52,9 +54,12 @@ interface CalculatedResults {
     systemName: string;
     baseHardwareCost: number;
     fsrCost: number;
+    consumablesCost: number;
     totalMonthlyRecurring: number;
     totalForDuration: number;
     duration: number;
+    launchesPerDay?: number;
+    monthlyConsumablesCost: number;
   }>;
   additionalCosts: Array<{
     description: string;
@@ -82,6 +87,13 @@ interface FSRConfig {
   };
 }
 
+interface ConsumableInput {
+  description: string;
+  unitCost: number;
+  unitsPerMonth: number;
+  type: 'BALLOON_GAS' | 'OTHER';
+}
+
 const defaultInputs: CalculatorInputs = {
   systems: [
     {
@@ -94,6 +106,7 @@ const defaultInputs: CalculatorInputs = {
       fsrCostPeriod: 'monthly',
       hasConsumables: false,
       consumables: [],
+      launchesPerDay: 1,
     },
   ],
   additionalCosts: [],
@@ -182,6 +195,7 @@ export default function CalculatorPage() {
           fsrCostPeriod: 'monthly',
           hasConsumables: false,
           consumables: [],
+          launchesPerDay: 1,
         },
       ],
     }));
@@ -300,7 +314,8 @@ export default function CalculatorPage() {
           if (!input.system) return null;
 
           const baseHardwareCost = input.system.basePrice * input.quantity;
-
+          const hasBalloonGas = input.consumables?.some(c => c.type === 'BALLOON_GAS');
+          
           let fsrCost = 0;
           if (input.hasFSR && input.system?.fsrSupport?.available) {
             const monthlyCost = input.system.fsrSupport.monthlyCost;
@@ -317,30 +332,33 @@ export default function CalculatorPage() {
             }
           }
 
-          const consumablesCost = input.hasConsumables
-            ? input.consumables.reduce((total, consumable) => 
-                total + (consumable.unitCost * consumable.unitsPerMonth), 0)
+          const monthlyConsumablesCost = input.hasConsumables
+            ? input.consumables.reduce((total, consumable: ConsumableInput) => {
+                let quantity = consumable.unitsPerMonth;
+                if (consumable.type === 'BALLOON_GAS') {
+                  quantity = input.launchesPerDay ? quantity * input.launchesPerDay * 30 : 0;
+                }
+                return total + (consumable.unitCost * quantity);
+              }, 0)
             : 0;
 
-          const totalMonthlyRecurring = fsrCost + consumablesCost;
+          const totalMonthlyRecurring = fsrCost + monthlyConsumablesCost;
           const totalForDuration = baseHardwareCost + (totalMonthlyRecurring * input.duration);
 
           return {
             systemName: input.system.name,
             baseHardwareCost,
             fsrCost,
+            consumablesCost: monthlyConsumablesCost,
             totalMonthlyRecurring,
             totalForDuration,
-            duration: input.duration
+            duration: input.duration,
+            ...(hasBalloonGas ? { launchesPerDay: input.launchesPerDay } : {}),
+            monthlyConsumablesCost
           };
         })
         .filter((result): result is NonNullable<typeof result> => result !== null),
-      additionalCosts: inputs.additionalCosts.map(cost => ({
-        description: cost.description,
-        amount: cost.amount,
-        isRecurring: cost.isRecurring,
-        totalForDuration: cost.isRecurring ? cost.amount * Math.max(...inputs.systems.map(s => s.duration)) : cost.amount
-      }))
+      additionalCosts: []
     };
 
     // Calculate totals

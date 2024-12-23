@@ -3,7 +3,7 @@
 
 import '@/app/globals.css';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ThemeProvider } from '@/app/contexts/theme-context';
 import { NotificationsProvider } from '@/app/lib/contexts/notifications-context';
 import { AuthProvider } from '@/app/contexts/auth-context';
@@ -24,13 +24,17 @@ export default function RootLayout({
   const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
+  const handleRouteChange = useCallback(() => {
     setIsLoading(true);
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 200);
     return () => clearTimeout(timer);
-  }, [pathname, searchParams]);
+  }, []);
+
+  useEffect(() => {
+    return handleRouteChange();
+  }, [pathname, searchParams, handleRouteChange]);
 
   return (
     <html lang="en" suppressHydrationWarning>

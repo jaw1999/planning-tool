@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { SystemDetails } from '@/app/components/systems/system-details';
 import { EditSystemForm } from '@/app/components/systems/edit-system-form';
-import { useSystems } from '@/app/lib/hooks/useSystems';
+import { useSystems } from '@/app/hooks/use-systems';
 import { System } from '@/app/lib/types/system';
 
 export default function SystemPage() {

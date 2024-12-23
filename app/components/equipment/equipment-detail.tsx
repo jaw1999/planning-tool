@@ -74,6 +74,7 @@ export function EquipmentDetail({ equipment, onUpdate }: EquipmentDetailProps) {
         <ConsumablesTab
           equipmentId={equipment.id}
           presets={equipment.consumablePresets || []}
+          consumables={equipment.consumables || []}
           onAddPreset={handleAddPreset}
           onUpdatePreset={handleUpdatePreset}
           onDeletePreset={handleDeletePreset}

@@ -77,7 +77,7 @@ export default function EquipmentRepository() {
         </Button>
         <EquipmentDetail 
           equipment={selectedEquipment}
-          onEdit={() => setShowEditForm(true)}
+          onUpdate={updateEquipment}
         />
       </div>
     );

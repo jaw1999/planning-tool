@@ -2,8 +2,7 @@
 
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
-import { Plus, Trash2, BookOpen } from 'lucide-react';
-import { ConsumableLegendDialog } from '../consumables/consumable-legend-dialog';
+import { Plus, Trash2 } from 'lucide-react';
 import { ConsumablePreset, Consumable } from '@/app/lib/types/system';
 import { Button } from '../ui/button';
 
@@ -14,9 +13,6 @@ interface ConsumablesTabProps {
   onAddPreset: (equipmentId: string, preset: Partial<ConsumablePreset>) => void;
   onUpdatePreset: (equipmentId: string, presetId: string, updates: Partial<ConsumablePreset>) => void;
   onDeletePreset: (equipmentId: string, presetId: string) => void;
-  onAddConsumable: () => void;
-  onUpdateConsumable: (id: string, updates: Partial<Consumable>) => void;
-  onDeleteConsumable: (id: string) => void;
 }
 
 export function ConsumablesTab({
@@ -26,24 +22,19 @@ export function ConsumablesTab({
   onAddPreset,
   onUpdatePreset,
   onDeletePreset,
-  onAddConsumable,
-  onUpdateConsumable,
-  onDeleteConsumable
 }: ConsumablesTabProps) {
   const handleAddPreset = () => {
-    const newConsumable: Consumable = {
-      id: crypto.randomUUID(),
-      name: '',
-      unit: '',
-      currentUnitCost: 0,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-
     const newPreset: Partial<ConsumablePreset> = {
       name: 'New Preset',
       quantity: 1,
-      consumable: newConsumable
+      consumable: {
+        id: crypto.randomUUID(),
+        name: '',
+        unit: '',
+        currentUnitCost: 0,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
     };
 
     onAddPreset(equipmentId, newPreset);
@@ -53,17 +44,9 @@ export function ConsumablesTab({
     <Card>
       <CardHeader>
         <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <CardTitle>Consumable Presets</CardTitle>
-            <ConsumableLegendDialog
-              consumables={consumables}
-              onAdd={onAddConsumable}
-              onUpdate={onUpdateConsumable}
-              onDelete={onDeleteConsumable}
-            />
-          </div>
+          <CardTitle>Consumables</CardTitle>
           <Button onClick={handleAddPreset} variant="default">
-            <Plus className="w-4 h-4 mr-2" /> Add Preset
+            <Plus className="w-4 h-4 mr-2" /> Add Consumable
           </Button>
         </div>
       </CardHeader>
@@ -72,11 +55,13 @@ export function ConsumablesTab({
           {presets.map((preset) => (
             <div key={preset.id} className="grid grid-cols-4 gap-4 p-4 border rounded-lg">
               <div>
-                <label className="block text-sm font-medium mb-1">Preset Name</label>
+                <label className="block text-sm font-medium mb-1">Name</label>
                 <input
                   type="text"
-                  value={preset.name}
-                  onChange={(e) => onUpdatePreset(equipmentId, preset.id, { name: e.target.value })}
+                  value={preset.consumable.name}
+                  onChange={(e) => onUpdatePreset(equipmentId, preset.id, {
+                    consumable: { ...preset.consumable, name: e.target.value }
+                  })}
                   className="w-full p-2 border rounded"
                 />
               </div>
@@ -85,20 +70,19 @@ export function ConsumablesTab({
                 <input
                   type="number"
                   value={preset.quantity}
-                  onChange={(e) => onUpdatePreset(equipmentId, preset.id, { quantity: parseInt(e.target.value) })}
+                  onChange={(e) => onUpdatePreset(equipmentId, preset.id, { 
+                    quantity: parseInt(e.target.value) 
+                  })}
                   className="w-full p-2 border rounded"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Unit Cost</label>
+                <label className="block text-sm font-medium mb-1">Unit</label>
                 <input
-                  type="number"
-                  value={preset.consumable.currentUnitCost}
+                  type="text"
+                  value={preset.consumable.unit}
                   onChange={(e) => onUpdatePreset(equipmentId, preset.id, {
-                    consumable: {
-                      ...preset.consumable,
-                      currentUnitCost: parseFloat(e.target.value)
-                    }
+                    consumable: { ...preset.consumable, unit: e.target.value }
                   })}
                   className="w-full p-2 border rounded"
                 />
@@ -115,7 +99,7 @@ export function ConsumablesTab({
           ))}
           {presets.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
-              No consumable presets defined
+              No consumables defined
             </div>
           )}
         </div>

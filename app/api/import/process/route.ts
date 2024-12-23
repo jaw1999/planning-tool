@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/app/services/database/prisma';
+import prisma from "@/app/lib/prisma";
 import { parseFile } from '@/app/lib/utils/file-parser';
 import { uploadDocument } from '@/app/lib/utils/storage';
 
@@ -18,10 +18,9 @@ export async function POST(request: Request) {
     const fileBuffer = await file.arrayBuffer();
     const fileType = file.name.split('.').pop()?.toLowerCase();
 
-    // Parse the file contents
     const { systemName, rawData } = await parseFile(fileBuffer, fileType as string);
 
-    // Create or update the system in the database
+    // Create or update the system with required fields
     const system = await prisma.system.upsert({
       where: { id: systemName },
       update: { 
@@ -29,7 +28,12 @@ export async function POST(request: Request) {
         ...rawData 
       },
       create: {
+        id: systemName,
         name: systemName,
+        basePrice: 0,
+        leadTime: 30,
+        description: '',
+        specifications: {},
         ...rawData
       }
     });
@@ -37,18 +41,18 @@ export async function POST(request: Request) {
     // Store the original document
     const documentUrl = await uploadDocument(file, system.id, systemName);
 
-    // Link the document to the system
-    await prisma.document.create({
+    // Create document record using the schema fields
+    await prisma.systemDocument.create({
       data: {
-        systemId: system.id,
-        name: file.name,
+        title: file.name,
         type: fileType as string,
         url: documentUrl,
-        uploadedAt: new Date()
+        system: { connect: { id: system.id } },
+        createdAt: new Date()
       }
     });
 
-    return NextResponse.json({ success: true, systemId: system.id });
+    return NextResponse.json(system, { status: 201 });
   } catch (error) {
     console.error('Import processing failed:', error);
     return NextResponse.json(

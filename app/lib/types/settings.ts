@@ -31,6 +31,9 @@ export interface GeneralSettings {
   defaultCurrency: string;
   notifications: boolean;
   autoSave: boolean;
+  timezone: string;
+  dateFormat: string;
+  language: string;
 }
 
 // Constants for roles and status
@@ -46,9 +49,12 @@ export function isUserStatus(value: string): value is UserStatus {
   return USER_STATUS.includes(value as UserStatus);
 }
 
-const defaultSettings: GeneralSettings = {
+export const defaultSettings: GeneralSettings = {
   siteName: 'Planning Tool',
   defaultCurrency: 'USD',
   notifications: true,
-  autoSave: true
+  autoSave: true,
+  timezone: 'UTC',
+  dateFormat: 'DD/MM/YYYY',
+  language: 'en'
 };

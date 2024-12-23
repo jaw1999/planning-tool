@@ -1,175 +1,240 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
-import { Edit, Trash2, Search, Plus } from 'lucide-react';
-import type { User, Permission } from '@/app/lib/types/settings';
-import { ROLES } from '@/app/lib/types/settings';
-import { Role, UserStatus } from '@prisma/client';
-import { EditUserModal } from './edit-user-modal';
+import { Users, Shield, Clock, Mail, Edit, Trash2, UserPlus } from 'lucide-react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../ui/table";
+import { Badge } from "../ui/badge";
+import { Button } from "../ui/button";
+import { toast } from '../ui/use-toast';
+import axios from 'axios';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { AddUserForm } from './add-user-form';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import { EditUserForm } from './edit-user-form';
+import { Role, UserStatus } from '@prisma/client';
 
-interface UserManagementProps {
-  users: User[];
-  permissions: Permission[];
-  onAddUser: (userData: Omit<User, 'id'>) => Promise<void>;
-  onEditUser: (updatedUser: Partial<User>) => Promise<void>;
-  onDeleteUser: (userId: string) => Promise<void>;
-  onUpdatePermission: (permissionId: string, role: keyof Permission['roles'], value: boolean) => Promise<void>;
-  loading: boolean;
-  error: string | null;
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: Role;
+  status: UserStatus;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export function UserManagement({
-  users,
-  permissions,
-  onAddUser,
-  onEditUser,
-  onDeleteUser,
-  onUpdatePermission,
-  loading,
-  error
-}: UserManagementProps) {
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [roleFilter, setRoleFilter] = useState<Role | 'ALL'>('ALL');
+interface UserWithPassword extends Omit<User, 'id' | 'createdAt' | 'updatedAt'> {
+  password?: string;
+}
 
-  const handleEditClick = (user: User) => {
-    setSelectedUser(user);
-    setIsEditModalOpen(true);
+export function UserManagement() {
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const fetchUsers = async () => {
+    try {
+      const response = await axios.get('/api/users');
+      setUsers(response.data);
+    } catch (error) {
+      console.error('Failed to fetch users:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch users',
+        variant: 'error',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleAddClick = () => {
-    setIsAddModalOpen(true);
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const handleUpdateUser = async (userId: string, data: Partial<UserWithPassword>) => {
+    try {
+      await axios.patch(`/api/users/${userId}`, data);
+      toast({
+        title: 'Success',
+        description: 'User updated successfully'
+      });
+      fetchUsers();
+    } catch (error) {
+      console.error('Failed to update user:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update user',
+        variant: 'error',
+      });
+    }
   };
 
-  const handleAddUser = async (userData: Omit<User, 'id' | 'createdAt' | 'lastLogin'>) => {
-    await onAddUser({
-      ...userData,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    });
-    setIsAddModalOpen(false);
+  const handleCreateUser = async (data: UserWithPassword) => {
+    try {
+      await axios.post('/api/users', data);
+      toast({
+        title: 'Success',
+        description: 'User created successfully',
+      });
+      fetchUsers();
+      setIsDialogOpen(false);
+    } catch (error) {
+      console.error('Failed to create user:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to create user',
+        variant: 'error',
+      });
+    }
   };
 
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = roleFilter === 'ALL' || user.role === roleFilter;
-    return matchesSearch && matchesRole;
-  });
+  const handleDeleteUser = async (userId: string) => {
+    try {
+      await axios.delete(`/api/users/${userId}`);
+      toast({
+        title: 'Success',
+        description: 'User deleted successfully',
+        variant: 'success'
+      });
+      fetchUsers();
+    } catch (error) {
+      console.error('Failed to delete user:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete user',
+        variant: 'error'
+      });
+    }
+  };
 
-  if (loading) {
-    return <div className="text-center py-8">Loading users...</div>;
-  }
+  const getRoleBadgeColor = (role: User['role']) => {
+    const colors = {
+      ADMIN: 'bg-red-100 text-red-800',
+      PLANNER: 'bg-blue-100 text-blue-800',
+      VIEWER: 'bg-green-100 text-green-800',
+      GUEST: 'bg-gray-100 text-gray-800',
+    };
+    return colors[role];
+  };
 
-  if (error) {
-    return <div className="text-center py-8 text-red-500">{error}</div>;
-  }
+  const getStatusBadgeColor = (status: User['status']) => {
+    const colors = {
+      ACTIVE: 'bg-green-100 text-green-800',
+      INACTIVE: 'bg-gray-100 text-gray-800',
+      PENDING: 'bg-yellow-100 text-yellow-800',
+    };
+    return colors[status];
+  };
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle>User Management</CardTitle>
-            <button
-              onClick={handleAddClick}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Add User
-            </button>
-          </div>
-          <div className="mt-4 space-y-4">
-            {/* Search and Filter Controls */}
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search by name or email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 w-full p-2 border rounded-md"
+    <Card>
+      <CardHeader>
+        <div className="flex justify-between items-center">
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            User Management
+          </CardTitle>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <UserPlus className="h-4 w-4 mr-2" />
+                Add User
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Add New User</DialogTitle>
+              </DialogHeader>
+              <AddUserForm 
+                onAdd={handleCreateUser}
+                onCancel={() => setIsDialogOpen(false)}
+              />
+            </DialogContent>
+          </Dialog>
+          <Dialog open={!!editingUser} onOpenChange={(open) => !open && setEditingUser(null)}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Edit User</DialogTitle>
+              </DialogHeader>
+              {editingUser && (
+                <EditUserForm
+                  user={editingUser}
+                  onSave={handleUpdateUser}
+                  onCancel={() => setEditingUser(null)}
                 />
-              </div>
-              <select
-                value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value as Role | 'ALL')}
-                className="p-2 border rounded-md min-w-[150px]"
-              >
-                <option value="ALL">All Roles</option>
-                {Object.values(Role).map((role) => (
-                  <option key={role} value={role}>{role}</option>
-                ))}
-              </select>
-            </div>
-            
-            {/* Results Summary */}
-            <div className="text-sm text-gray-500">
-              Showing {filteredUsers.length} of {users.length} users
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {filteredUsers.length > 0 ? (
-              filteredUsers.map((user) => (
-                <div
-                  key={user.email}
-                  className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent transition-colors"
-                >
-                  <div>
-                    <div className="font-medium">{user.name}</div>
-                    <div className="text-sm text-muted-foreground">{user.email}</div>
-                    <div className="text-sm text-muted-foreground">Role: {user.role}</div>
-                  </div>
+              )}
+            </DialogContent>
+          </Dialog>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Role</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Last Updated</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {users.map((user) => (
+              <TableRow key={user.id}>
+                <TableCell>{user.name}</TableCell>
+                <TableCell>{user.email}</TableCell>
+                <TableCell>
+                  <Badge className={getRoleBadgeColor(user.role)}>
+                    {user.role}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge className={getStatusBadgeColor(user.status)}>
+                    {user.status}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  {new Date(user.updatedAt).toLocaleDateString()}
+                </TableCell>
+                <TableCell>
                   <div className="flex gap-2">
-                    <button
-                      onClick={() => handleEditClick(user)}
-                      className="p-2 text-blue-600 hover:text-blue-800"
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setEditingUser(user)}
                     >
-                      <Edit className="h-5 w-5" />
-                    </button>
-                    <button
-                      onClick={() => onDeleteUser(user.id)}
-                      className="p-2 text-red-600 hover:text-red-800"
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-600 hover:text-red-700"
+                      onClick={() => {
+                        if (window.confirm('Are you sure you want to delete this user?')) {
+                          handleDeleteUser(user.id);
+                        }
+                      }}
                     >
-                      <Trash2 className="h-5 w-5" />
-                    </button>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                No users found matching your search criteria
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New User</DialogTitle>
-          </DialogHeader>
-          <AddUserForm 
-            onAdd={handleAddUser}
-            onCancel={() => setIsAddModalOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
-
-      {selectedUser && (
-        <EditUserModal
-          user={selectedUser}
-          onClose={() => setIsEditModalOpen(false)}
-          onSave={onEditUser}
-        />
-      )}
-    </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
   );
 }

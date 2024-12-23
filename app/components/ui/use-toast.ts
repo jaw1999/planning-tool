@@ -9,14 +9,14 @@ import {
 } from "@/app/components/ui/toast"
 
 const TOAST_LIMIT = 1
-const TOAST_REMOVE_DELAY = 1000000
+const TOAST_REMOVE_DELAY = 3000
 
 type ToasterToast = {
   id: string
   title?: React.ReactNode
   description?: React.ReactNode
   action?: React.ReactNode
-  variant?: "default" | "destructive"
+  variant?: "success" | "error" | "warning" | "info"
   duration?: number
 }
 
@@ -154,12 +154,12 @@ interface ToastProps {
 }
 
 function toast({
-  variant = "default",
+  variant = "success",
   title,
   description,
   duration,
 }: {
-  variant?: "default" | "destructive"
+  variant?: "success" | "error" | "warning" | "info"
   title?: string
   description?: string
   duration?: number
@@ -180,25 +180,25 @@ function toast({
 
 // Add convenience methods
 toast.success = (message: string) => toast({ 
-  variant: "default", 
+  variant: "success", 
   title: "Success", 
   description: message 
 });
 
 toast.error = (message: string) => toast({ 
-  variant: "destructive", 
+  variant: "error", 
   title: "Error", 
   description: message 
 });
 
 toast.warning = (message: string) => toast({ 
-  variant: "default", 
+  variant: "warning", 
   title: "Warning", 
   description: message 
 });
 
 toast.info = (message: string) => toast({ 
-  variant: "default", 
+  variant: "info", 
   title: "Info", 
   description: message 
 });

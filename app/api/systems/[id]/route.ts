@@ -8,8 +8,14 @@ export async function DELETE(
   try {
     const { id } = params;
     
+    // First delete related exercise systems
+    await prisma.exerciseSystem.deleteMany({
+      where: { systemId: id }
+    });
+    
+    // Then delete the system
     await prisma.system.delete({
-      where: { id },
+      where: { id }
     });
     
     return NextResponse.json({ success: true });

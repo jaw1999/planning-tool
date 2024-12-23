@@ -6,8 +6,12 @@ import { LeadTimes } from '@/app/components/settings/lead-times';
 import { useLeadTimes } from '@/app/contexts/lead-times-context';
 import { toast } from '@/app/components/ui/use-toast';
 import { LeadTimeItem } from '@/app/contexts/lead-times-context';
+import { Button } from '@/app/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 export default function ExerciseSettingsPage() {
+  const router = useRouter();
   const { leadTimes, addLeadTime, updateLeadTime, deleteLeadTime } = useLeadTimes();
 
   const handleAdd = async (leadTime: Omit<LeadTimeItem, 'id'>) => {
@@ -21,7 +25,7 @@ export default function ExerciseSettingsPage() {
       toast({
         title: 'Error',
         description: 'Failed to add lead time',
-        variant: 'destructive'
+        variant: 'error'
       });
     }
   };
@@ -37,7 +41,7 @@ export default function ExerciseSettingsPage() {
       toast({
         title: 'Error',
         description: 'Failed to update lead time',
-        variant: 'destructive'
+        variant: 'error'
       });
     }
   };
@@ -53,13 +57,19 @@ export default function ExerciseSettingsPage() {
       toast({
         title: 'Error',
         description: 'Failed to delete lead time',
-        variant: 'destructive'
+        variant: 'error'
       });
     }
   };
 
   return (
     <div className="space-y-6 p-6">
+      <div className="flex items-center justify-between">
+        <Button variant="ghost" className="gap-2" onClick={() => router.back()}>
+          <ArrowLeft className="w-4 h-4" />
+          Back
+        </Button>
+      </div>
       <h1 className="text-3xl font-bold">Exercise Settings</h1>
       <LeadTimes 
         leadTimes={leadTimes}
