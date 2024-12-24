@@ -6,59 +6,50 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/app/components/ui/ta
 import { toast } from '@/app/components/ui/use-toast';
 import { UserManagement } from '@/app/components/settings/user-management';
 import { DatabaseManagement } from '@/app/components/settings/database-management';
+import { SystemHealth } from '@/app/components/settings/system-health';
 import { GeneralSettings } from '@/app/components/settings/general-settings';
 import { defaultSettings } from '@/app/lib/types/settings';
 import type { GeneralSettings as GeneralSettingsType } from '@/app/lib/types/settings';
 import { Card, CardContent } from '@/app/components/ui/card';
 import { Skeleton } from '../components/ui/skeleton';
+import { Button } from '@/app/components/ui/button';
 
 export default function SettingsPage() {
-  const [settings, setSettings] = useState<GeneralSettingsType>(defaultSettings);
-  const [activeTab, setActiveTab] = useState("general");
   const [loading, setLoading] = useState(false);
+  const [settings, setSettings] = useState<GeneralSettingsType>(defaultSettings);
 
   useEffect(() => {
-    const fetchSettings = async () => {
+    const loadSettings = async () => {
       try {
-        setLoading(true);
         const response = await axios.get('/api/settings');
         setSettings(response.data);
       } catch (error) {
-        console.error('Failed to fetch settings:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load settings',
-          variant: 'error'
-        });
-      } finally {
-        setLoading(false);
+        console.error('Failed to load settings:', error);
       }
     };
-
-    fetchSettings();
+    loadSettings();
   }, []);
 
-  const handleUpdateSettings = async (newSettings: Partial<GeneralSettingsType>) => {
-    const updatedSettings = { ...settings, ...newSettings };
-    setSettings(updatedSettings);
-    
+  const handleUpdateSettings = async (partialSettings: Partial<GeneralSettingsType>) => {
     try {
-      await axios.patch('/api/settings', updatedSettings);
+      const newSettings = { ...settings, ...partialSettings };
+      await axios.post('/api/settings', newSettings);
+      setSettings(newSettings);
+      toast({
+        title: 'Success',
+        description: 'Settings updated successfully'
+      });
     } catch (error) {
-      console.error('Failed to update settings:', error);
       toast({
         title: 'Error',
-        description: 'Failed to save settings',
+        description: 'Failed to update settings',
         variant: 'error'
       });
-      // Revert settings if save failed
-      setSettings(settings);
     }
   };
 
   const handleDatabaseExport = async () => {
     try {
-      setLoading(true);
       const response = await axios.get('/api/database/export', { responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
@@ -67,92 +58,68 @@ export default function SettingsPage() {
       document.body.appendChild(link);
       link.click();
       link.remove();
-      toast({
-        title: 'Success',
-        description: 'Database exported successfully',
-        variant: 'success',
-      });
     } catch (error) {
       toast({
         title: 'Error',
         description: 'Failed to export database',
-        variant: 'error',
+        variant: 'error'
       });
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleDatabaseBackup = async () => {
     try {
-      setLoading(true);
       await axios.post('/api/database/backup');
       toast({
         title: 'Success',
-        description: 'Database backup created successfully',
-        variant: 'success',
+        description: 'Database backup created successfully'
       });
     } catch (error) {
       toast({
         title: 'Error',
         description: 'Failed to create database backup',
-        variant: 'error',
+        variant: 'error'
       });
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleDatabaseRestore = async (file: File) => {
     try {
-      setLoading(true);
       const formData = new FormData();
       formData.append('backup', file);
       await axios.post('/api/database/restore', formData);
       toast({
         title: 'Success',
-        description: 'Database restored successfully',
-        variant: 'success',
+        description: 'Database restored successfully'
       });
     } catch (error) {
       toast({
         title: 'Error',
         description: 'Failed to restore database',
-        variant: 'error',
+        variant: 'error'
       });
-    } finally {
-      setLoading(false);
     }
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <h1 className="text-3xl font-bold">Settings</h1>
+    <div className="container space-y-6 p-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">Settings</h1>
+      </div>
 
-      <Tabs defaultValue="general" onValueChange={setActiveTab}>
+      <Tabs defaultValue="general" className="space-y-4">
         <TabsList>
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="database">Database</TabsTrigger>
+          <TabsTrigger value="system">System</TabsTrigger>
         </TabsList>
 
         <TabsContent value="general">
-          {loading ? (
-            <Card>
-              <CardContent className="p-6">
-                <div className="space-y-4">
-                  <Skeleton className="h-8 w-[200px]" />
-                  <Skeleton className="h-20 w-full" />
-                  <Skeleton className="h-20 w-full" />
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <GeneralSettings
-              settings={settings}
-              onUpdate={handleUpdateSettings}
-            />
-          )}
+          <GeneralSettings 
+            settings={settings}
+            onUpdate={handleUpdateSettings}
+          />
         </TabsContent>
 
         <TabsContent value="users">
@@ -160,11 +127,23 @@ export default function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="database">
-          <DatabaseManagement 
-            onExport={handleDatabaseExport}
-            onBackup={handleDatabaseBackup}
-            onRestore={handleDatabaseRestore}
-          />
+          <div className="grid gap-4">
+            <Card>
+              <CardContent className="pt-6">
+                <DatabaseManagement 
+                  onExport={handleDatabaseExport}
+                  onBackup={handleDatabaseBackup}
+                  onRestore={handleDatabaseRestore}
+                />
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="system">
+          <div className="space-y-6">
+            <SystemHealth />
+          </div>
         </TabsContent>
       </Tabs>
     </div>

@@ -8,6 +8,7 @@ import { Label } from '@/app/components/ui/label';
 import { Input } from '@/app/components/ui/input';
 import { Button } from '@/app/components/ui/button';
 import { Checkbox } from '@/app/components/ui/checkbox';
+import { toast } from '@/app/components/ui/use-toast';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -40,6 +41,27 @@ export default function LoginPage() {
     }
   };
 
+  const handleForgotPassword = () => {
+    console.log('Forgot password clicked');
+    try {
+      toast({
+        title: 'Redirecting',
+        description: 'Taking you to password reset...',
+        variant: 'info'
+      });
+      console.log('Toast called');
+      router.push('/forgot-password');
+      console.log('Router push called');
+    } catch (error) {
+      console.error('Navigation error:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to navigate to password reset',
+        variant: 'error'
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <Card className="w-[400px]">
@@ -50,6 +72,19 @@ export default function LoginPage() {
           </p>
         </CardHeader>
         <CardContent>
+          <div className="flex justify-end mb-4">
+            <Button
+              type="button"
+              variant="link"
+              className="px-0 text-sm text-muted-foreground hover:text-foreground"
+              onClick={() => {
+                console.log('Button clicked');
+                handleForgotPassword();
+              }}
+            >
+              Forgot password?
+            </Button>
+          </div>
           <form onSubmit={handleSubmit}>
             <div className="space-y-4">
               <div>

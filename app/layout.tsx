@@ -12,6 +12,7 @@ import { NotificationsContainer } from '@/app/components/notifications/notificat
 import { Inter } from 'next/font/google';
 import { NotificationProvider } from '@/app/components/ui/notification/provider';
 import { LeadTimesProvider } from './contexts/lead-times-context';
+import { Toaster } from "@/app/components/ui/toaster"
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -37,12 +38,17 @@ export default function RootLayout({
   }, [pathname, searchParams, handleRouteChange]);
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <head>
-        <title>Military Planning Tool</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <meta name="theme-color" content="#000000" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="format-detection" content="telephone=no" />
+        <link rel="manifest" href="/manifest.json" />
       </head>
-      <body className={inter.className}>
+      <body className="text-size-adjust momentum-scroll">
         <ThemeProvider>
           <AuthProvider>
             <NotificationsProvider>
@@ -62,6 +68,7 @@ export default function RootLayout({
             </NotificationsProvider>
           </AuthProvider>
         </ThemeProvider>
+        <Toaster />
       </body>
     </html>
   );

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
-import { Database, RefreshCw, AlertCircle, HardDrive, Clock, Users, Activity, Server, Loader2, Cpu } from 'lucide-react';
+import { Database, RefreshCw, AlertCircle, HardDrive, Clock, Users, Activity, Server, Loader2, Cpu, Download, Upload } from 'lucide-react';
 import { MemoryStick as Memory } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
 import axios from 'axios';
@@ -8,6 +8,7 @@ import { StatusCard } from './status-card';
 import { ResourceMeter } from './resource-meter';
 import { toast } from '@/app/components/ui/use-toast';
 import { Button } from '../ui/button';
+import { DatabasePluginManager } from './database-plugin-manager';
 
 interface DatabaseStats {
   totalUsers: number;
@@ -68,18 +69,102 @@ interface MetricHistory {
 interface DatabaseManagementProps {
   onExport: () => Promise<void>;
   onBackup?: () => Promise<void>;
-  onRestore?: (file: File) => Promise<void>;
+  onRestore: (file: File) => Promise<void>;
 }
 
 export function DatabaseManagement({ onExport, onBackup, onRestore }: DatabaseManagementProps) {
   const [stats, setStats] = useState<DetailedDatabaseStats | null>(null);
   const [metricHistory, setMetricHistory] = useState<MetricHistory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isBackingUp, setIsBackingUp] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleBackup = async () => {
+    if (!onBackup) return;
+    setIsBackingUp(true);
+    try {
+      await onBackup();
+      toast({
+        title: "Success",
+        description: "Database backup created successfully",
+        variant: "success"
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create database backup",
+        variant: "error"
+      });
+    } finally {
+      setIsBackingUp(false);
+    }
+  };
+
+  const handleRestore = async (file: File) => {
+    if (!onRestore) return;
+    setIsRestoring(true);
+    try {
+      await onRestore(file);
+      toast({
+        title: "Success",
+        description: "Database restored successfully",
+        variant: "success"
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to restore database",
+        variant: "error"
+      });
+    } finally {
+      setIsRestoring(false);
+    }
+  };
+
+  const handleExport = async () => {
+    if (!onExport) return;
+    setIsExporting(true);
+    try {
+      const response = await axios.get('/api/database/plugin/export', {
+        responseType: 'blob'
+      });
+      
+      const blob = new Blob([response.data], { 
+        type: 'application/json'
+      });
+      
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `database-plugin-${new Date().toISOString()}.dbplugin`;
+      
+      document.body.appendChild(link);
+      link.click();
+      
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Success",
+        description: "Database exported successfully",
+        variant: "success"
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to export database",
+        variant: "error"
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        // Simulated API call - replace with actual endpoint
         const response = await axios.get('/api/database/stats');
         setStats(response.data);
       } catch (error) {
@@ -89,22 +174,41 @@ export function DatabaseManagement({ onExport, onBackup, onRestore }: DatabaseMa
 
     const fetchMetrics = async () => {
       try {
-        // Simulated API call - replace with actual endpoint
-        const response = await axios.get('/api/database/metrics');
-        setMetricHistory(response.data);
+        const response = await axios.get('/api/database/stats');
+        const newMetric = {
+          timestamp: Date.now(),
+          cpuUsage: parseFloat(response.data.systemMetrics.cpu.usage || '0'),
+          memoryUsage: parseFloat(response.data.systemMetrics.memory.usage || '0'),
+          apiCalls: response.data.systemMetrics.api.requestsPerMinute || 0
+        };
+        
+        setMetricHistory(prev => {
+          // Initialize with current metric if empty
+          if (prev.length === 0) {
+            return Array(30).fill({...newMetric, timestamp: Date.now()});
+          }
+          const updatedHistory = [...prev, newMetric];
+          // Keep only the last 30 data points
+          return updatedHistory.slice(-30);
+        });
       } catch (error) {
         console.error('Failed to fetch metrics:', error);
-      } finally {
-        setLoading(false);
       }
     };
 
+    // Initial fetch
     fetchStats();
     fetchMetrics();
 
-    // Refresh stats every 30 seconds
-    const interval = setInterval(fetchStats, 30000);
-    return () => clearInterval(interval);
+    // Set up intervals for both stats and metrics
+    const statsInterval = setInterval(fetchStats, 30000);
+    const metricsInterval = setInterval(fetchMetrics, 30000);
+
+    // Cleanup intervals on unmount
+    return () => {
+      clearInterval(statsInterval);
+      clearInterval(metricsInterval);
+    };
   }, []);
 
   const checkDatabaseConnection = async () => {
@@ -318,58 +422,85 @@ export function DatabaseManagement({ onExport, onBackup, onRestore }: DatabaseMa
                 </LineChart>
               </ResponsiveContainer>
             </div>
+
+            <div className="mt-6">
+              <DatabasePluginManager 
+                onInstall={async (plugin: File) => {
+                  setIsRestoring(true);
+                  try {
+                    await onRestore(plugin);
+                    toast({
+                      title: "Success",
+                      description: "Plugin installed successfully",
+                      variant: "success"
+                    });
+                  } catch (error) {
+                    toast({
+                      title: "Error",
+                      description: "Failed to install plugin",
+                      variant: "error"
+                    });
+                  } finally {
+                    setIsRestoring(false);
+                  }
+                }}
+                onExport={handleExport}
+              />
+            </div>
           </div>
 
-          <div className="flex gap-4">
-            <Button
-              onClick={onExport}
-              className="bg-blue-600 hover:bg-blue-700"
-              disabled={loading}
+          <div className="flex gap-4 mt-6">
+            <Button 
+              onClick={handleBackup} 
+              disabled={isBackingUp}
             >
-              {loading ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              {isBackingUp ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating Backup...
+                </>
               ) : (
-                <RefreshCw className="h-4 w-4 mr-2" />
+                <>
+                  <Database className="mr-2 h-4 w-4" />
+                  Create Backup
+                </>
               )}
-              Export Data
             </Button>
-            {onBackup && (
-              <Button
-                onClick={onBackup}
-                className="bg-green-600 hover:bg-green-700"
-                disabled={loading}
-              >
-                {loading ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <HardDrive className="h-4 w-4 mr-2" />
-                )}
-                Create Backup
-              </Button>
-            )}
-            {onRestore && (
-              <Button
-                onClick={() => {
-                  const input = document.createElement('input');
-                  input.type = 'file';
-                  input.accept = '.sql,.dump';
-                  input.onchange = (e) => {
-                    const file = (e.target as HTMLInputElement).files?.[0];
-                    if (file) onRestore(file);
-                  };
-                  input.click();
-                }}
-                className="bg-yellow-600 hover:bg-yellow-700"
-                disabled={loading}
-              >
-                {loading ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                )}
-                Restore Backup
-              </Button>
-            )}
+            
+            <Button 
+              onClick={handleExport}
+              disabled={isExporting}
+            >
+              {isExporting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Exporting...
+                </>
+              ) : (
+                <>
+                  <Download className="mr-2 h-4 w-4" />
+                  Export Database
+                </>
+              )}
+            </Button>
+
+            <Button 
+              variant="destructive"
+              onClick={() => document.getElementById('restore-file')?.click()}
+              disabled={isRestoring}
+            >
+              {isRestoring ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Restoring...
+                </>
+              ) : (
+                <>
+                  <Upload className="mr-2 h-4 w-4" />
+                  Restore Backup
+                </>
+              )}
+            </Button>
           </div>
         </CardContent>
       </Card>

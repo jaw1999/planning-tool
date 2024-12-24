@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
-import { Users, Shield, Clock, Mail, Edit, Trash2, UserPlus } from 'lucide-react';
+import { Users, Shield, Clock, Mail, Edit, Trash2, UserPlus, Key } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import {
   Table,
   TableBody,
@@ -36,6 +37,7 @@ interface UserWithPassword extends Omit<User, 'id' | 'createdAt' | 'updatedAt'> 
 }
 
 export function UserManagement() {
+  const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -215,6 +217,24 @@ export function UserManagement() {
                       onClick={() => setEditingUser(user)}
                     >
                       <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        router.push(`/email?to=${user.email}&subject=Regarding your account: ${user.name}`);
+                      }}
+                    >
+                      <Mail className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        router.push(`/email?to=${user.email}&subject=Password Reset&type=reset&userId=${user.id}`);
+                      }}
+                    >
+                      <Key className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
