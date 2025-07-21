@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/app/services/database/prisma';
+import prisma from '@/lib/prisma';
 import { AnalyticsData, CostBreakdown, SystemBreakdown, MonthlyBreakdown } from '@/app/lib/types/analytics';
 import { calculateSystemCosts } from '@/app/lib/utils/cost';
 import { getDurationInMonths } from '@/app/lib/utils/date';

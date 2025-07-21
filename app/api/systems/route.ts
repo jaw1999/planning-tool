@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/app/services/database/prisma';
+import prisma from '@/lib/prisma';
 import { z } from 'zod';
 
 // Validation schema

@@ -60,6 +60,8 @@ export function TimelineChart({ exercise }: TimelineChartProps) {
 
   // Add system-specific events
   exercise.systems.forEach(({ system }) => {
+    if (!system) return;
+    
     // Calculate order date based on lead time
     const orderDate = addDays(exerciseStart, -system.leadTime);
     const deliveryDate = addDays(exerciseStart, -7); // Assume delivery 1 week before exercise

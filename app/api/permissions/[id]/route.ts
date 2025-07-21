@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/app/services/database/prisma';  // Update this path
+import prisma from '@/lib/prisma';
 import { Prisma, Role, UserStatus } from '@prisma/client';
 
 export async function PUT(

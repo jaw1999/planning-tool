@@ -15,10 +15,25 @@ model User {
   password  String     // Changed from optional to required
   role      Role      @default(VIEWER)
   status    UserStatus @default(ACTIVE)
+  
+  // MFA fields
+  mfaEnabled           Boolean   @default(false)
+  mfaSecret            String?   // TOTP secret
+  mfaBackupCodes       String[]  // Recovery codes
+  lastMfaVerification  DateTime?
+  phone                String?
+  
   createdAt DateTime  @default(now())
   lastLogin DateTime?
   updatedAt DateTime  @updatedAt
-  passwordResets PasswordReset[]
+  
+  // Relations
+  passwordResets               PasswordReset[]
+  auditLogs                   AuditLog[]
+  webhooks                    Webhook[]
+  notifications               Notification[]
+  notificationPreferences     UserNotificationPreferences?
+  pushSubscriptions           PushSubscription[]
 }
 
 model Permission {
@@ -307,4 +322,120 @@ model PasswordReset {
   expiresAt DateTime
   createdAt DateTime @default(now())
   used      Boolean  @default(false)
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  action     String   // CREATE, UPDATE, DELETE, VIEW, LOGIN, etc.
+  entityType String   // USER, EQUIPMENT, SYSTEM, EXERCISE, etc.
+  entityId   String   // ID of the affected resource
+  changes    Json?    // Additional details about the action
+  ipAddress  String?
+  userAgent  String?
+  metadata   Json?    // Additional metadata
+  createdAt  DateTime @default(now())
+}
+
+model Webhook {
+  id             String            @id @default(cuid())
+  url            String
+  events         String[]
+  secret         String
+  isActive       Boolean           @default(true)
+  retryAttempts  Int               @default(3)
+  timeoutMs      Int               @default(30000)
+  metadata       Json?
+  createdBy      String
+  creator        User              @relation(fields: [createdBy], references: [id])
+  deliveries     WebhookDelivery[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+}
+
+model WebhookDelivery {
+  id           String    @id @default(cuid())
+  webhookId    String
+  webhook      Webhook   @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+  event        String
+  payload      Json
+  status       String    @default("pending")
+  responseCode Int?
+  responseBody String?
+  attempts     Int       @default(0)
+  nextRetryAt  DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime  @default(now())
+}
+
+model PerformanceMetric {
+  id        String   @id @default(cuid())
+  name      String
+  value     Float
+  unit      String
+  timestamp DateTime @default(now())
+  context   String?
+  tags      String[]
+}
+
+model PerformanceAlert {
+  id         String    @id @default(cuid())
+  metricName String
+  value      Float
+  threshold  Float
+  severity   String
+  triggered  Boolean   @default(true)
+  resolved   Boolean   @default(false)
+  resolvedAt DateTime?
+  context    String?
+  createdAt  DateTime  @default(now())
+}
+
+model Notification {
+  id           String                 @id @default(cuid())
+  userId       String
+  user         User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type         String
+  title        String
+  message      String
+  data         String?
+  priority     String                 @default("medium")
+  read         Boolean                @default(false)
+  channels     String[]
+  scheduledFor DateTime?
+  expiresAt    DateTime?
+  deliveries   NotificationDelivery[]
+  createdAt    DateTime               @default(now())
+}
+
+model NotificationDelivery {
+  id             String       @id @default(cuid())
+  notificationId String
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  channels       String[]
+  deliveredAt    DateTime     @default(now())
+  success        Boolean      @default(true)
+  error          String?
+}
+
+model UserNotificationPreferences {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channels  String
+  types     String
+  quietHours String?
+  frequency String   @default("immediate")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PushSubscription {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription String
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
 }

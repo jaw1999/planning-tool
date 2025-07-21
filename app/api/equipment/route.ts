@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/app/lib/db';
+import prisma from '@/lib/prisma';
 import { Equipment } from '@/app/lib/types/equipment';
 import { Prisma } from '@prisma/client';
 
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const result = await db.equipment.create({
+    const result = await prisma.equipment.create({
       data: equipmentData
     });
 
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
 
 export async function GET() {
   try {
-    const equipment = await db.equipment.findMany();
+    const equipment = await prisma.equipment.findMany();
     
     // Transform the data to match our Equipment type with proper type assertions
     const transformedEquipment = equipment.map(item => {

@@ -59,7 +59,7 @@ function processText(text: string): ParseResult {
   const entities = {
     organizations: doc.organizations().out('array'),
     locations: doc.places().out('array'),
-    dates: doc.dates().out('array'),
+    dates: [], // TODO: Fix dates extraction from compromise library
     people: doc.people().out('array')
   };
 

@@ -3,25 +3,20 @@ import prisma from '@/lib/prisma';
 
 export async function GET() {
   try {
-    const settings = await prisma.settings.findFirst({
-      where: { id: 1 }
+    const settings = await prisma.settings.upsert({
+      where: { id: 1 },
+      update: {}, // Don't update if exists
+      create: {
+        id: 1,
+        siteName: 'Planning Tool',
+        defaultCurrency: 'USD',
+        notifications: true,
+        autoSave: true,
+        timezone: 'UTC',
+        dateFormat: 'DD/MM/YYYY',
+        language: 'en'
+      }
     });
-
-    if (!settings) {
-      const defaultSettings = await prisma.settings.create({
-        data: {
-          id: 1,
-          siteName: 'Planning Tool',
-          defaultCurrency: 'USD',
-          notifications: true,
-          autoSave: true,
-          timezone: 'UTC',
-          dateFormat: 'DD/MM/YYYY',
-          language: 'en'
-        }
-      });
-      return NextResponse.json(defaultSettings);
-    }
 
     return NextResponse.json(settings);
   } catch (error) {
